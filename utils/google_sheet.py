@@ -1,6 +1,5 @@
 import gspread
 import pandas as pd
-import streamlit as st
 from google.oauth2.service_account import Credentials
 
 
@@ -13,34 +12,26 @@ SERVICE_ACCOUNT = "service_account.json"
 SPREADSHEET_ID = "1Zcy1pB5r1mPYzIqdy8OYHQb9YJmbIvPOokxPCL_KkZM"
 
 
-def buka_sheet(nama_sheet):
+def baca_google_sheet(nama_sheet):
 
-    creds = Credentials.from_service_account_info(
-        st.secrets["gcp_service_account"],
+    creds = Credentials.from_service_account_file(
+        SERVICE_ACCOUNT,
         scopes=SCOPES
-)
-
-
-    client = gspread.authorize(
-        creds
     )
 
+    client = gspread.authorize(creds)
 
     sh = client.open_by_key(
         SPREADSHEET_ID
     )
 
-
     ws = sh.worksheet(
         nama_sheet
     )
 
-
     data = ws.get_all_records()
 
-
     df = pd.DataFrame(data)
-
 
     df.columns = (
         df.columns
@@ -48,9 +39,5 @@ def buka_sheet(nama_sheet):
         .str.strip()
         .str.upper()
     )
-
-
-    df = df.fillna("")
-
 
     return df
