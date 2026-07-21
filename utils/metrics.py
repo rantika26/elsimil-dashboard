@@ -1,19 +1,53 @@
 import pandas as pd
 
-bulan = ["JAN", "FEB", "MAR", "APR", "MEI", "JUN"]
 
-def hitung_kpi(df):
+def hitung_kpi(df, bulan):
 
-    # Pastikan semua kolom bulan bertipe numerik
-    for b in bulan:
-        df[b] = pd.to_numeric(df[b], errors="coerce").fillna(0)
+    df = df.copy()
 
-    total_entry = df[bulan].sum().sum()
+    # Pastikan kolom numerik
+    df[bulan] = pd.to_numeric(df[bulan], errors="coerce").fillna(0)
+    df["TOTAL"] = pd.to_numeric(df["TOTAL"], errors="coerce").fillna(0)
+    df["JUMLAH TPK"] = pd.to_numeric(df["JUMLAH TPK"], errors="coerce").fillna(0)
 
-    total_desa = df["DESA/KEL"].nunique()
+    # ===========================
+    # 1. Jumlah TPK melakukan pendampingan
+    # ===========================
 
-    total_kecamatan = df["KECAMATAN"].nunique()
+    jumlah_tpk_pendampingan = int(df[bulan].sum())
 
-    rata = round(total_entry / total_desa, 2) if total_desa > 0 else 0
+    # ===========================
+    # 2. Jumlah keseluruhan TPK
+    # ===========================
 
-    return total_entry, total_desa, total_kecamatan, rata
+    jumlah_tpk = (
+        df
+        .drop_duplicates(["KABUPATEN","KECAMATAN","DESA/KEL"])
+        ["JUMLAH TPK"]
+        .sum()
+    )
+
+    # ===========================
+    # 3. Persentase Partisipasi
+    # ===========================
+
+    if jumlah_tpk == 0:
+        persentase = 0
+    else:
+        persentase = round(
+            (jumlah_tpk_pendampingan / jumlah_tpk) * 100,
+            2
+        )
+
+    # ===========================
+    # 4. Jumlah Entry Jan-Jun
+    # ===========================
+
+    jumlah_entry = int(df["TOTAL"].sum())
+
+    return (
+        jumlah_tpk_pendampingan,
+        jumlah_tpk,
+        persentase,
+        jumlah_entry
+    )

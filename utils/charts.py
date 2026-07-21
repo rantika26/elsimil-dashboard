@@ -28,35 +28,27 @@ def style_chart(fig):
 # ===============================
 # GRAFIK TREND
 # ===============================
-
-def grafik_tren(df):
+def grafik_tren(df, bulan):
 
     data = []
 
-    for b in bulan:
-        nilai = pd.to_numeric(df[b], errors="coerce").fillna(0).sum()
+    for b in ["JAN","FEB","MAR","APR","MEI","JUN"]:
+
+        nilai = pd.to_numeric(
+            df[b],
+            errors="coerce"
+        ).fillna(0).sum()
+
         data.append(nilai)
 
     fig = px.line(
-        x=bulan,
+        x=["JAN","FEB","MAR","APR","MEI","JUN"],
         y=data,
         markers=True,
-        title="Trend Entry Januari - Juni"
-    )
-
-    fig.update_traces(
-        line=dict(
-            color="#8CA9FF",
-            width=4
-        ),
-        marker=dict(
-            size=9,
-            color="#AAC4F5"
-        )
+        title="Trend Entry"
     )
 
     return style_chart(fig)
-
 
 # ===============================
 # TOP 10 DESA
@@ -189,3 +181,56 @@ def grafik_kecamatan(df):
     )
 
     return style_chart(fig)
+
+import plotly.graph_objects as go
+
+def grafik_keaktifan_tpk(df):
+
+    data = df.sort_values("PERSEN", ascending=False)
+
+    fig = go.Figure()
+
+    fig.add_trace(
+        go.Bar(
+            y=data["DESA/KEL"],
+            x=data["AKTIF"],
+            orientation="h",
+            name="Aktif",
+            marker_color="#8CA9FF",
+            text=data["AKTIF"],
+            textposition="inside"
+        )
+    )
+
+    fig.add_trace(
+        go.Bar(
+            y=data["DESA/KEL"],
+            x=data["TIDAK_AKTIF"],
+            orientation="h",
+            name="Belum Aktif",
+            marker_color="#FFF2C6",
+            text=data["TIDAK_AKTIF"],
+            textposition="inside"
+        )
+    )
+
+    fig.update_layout(
+
+        title="Sebaran Keaktifan TPK per Desa",
+
+        barmode="stack",
+
+        height=max(500, len(data)*28),
+
+        paper_bgcolor="#FFF8DE",
+
+        plot_bgcolor="#FFF8DE",
+
+        legend_title="Status",
+
+        xaxis_title="Jumlah TPK",
+
+        yaxis_title=""
+    )
+
+    return fig

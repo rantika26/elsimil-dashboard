@@ -1,7 +1,17 @@
 import streamlit as st
 
 from utils.loader import load_data
+
+# ===========================
+# KPI
+# ===========================
+
 from utils.metrics import hitung_kpi
+
+# ===========================
+# CHART
+# ===========================
+
 from utils.charts import (
     grafik_tren,
     grafik_top_desa,
@@ -9,259 +19,247 @@ from utils.charts import (
     grafik_kecamatan
 )
 
+
+# ===========================
+# PARTISIPASI
+# ===========================
+
+from utils.partisipasi import (
+    hitung_partisipasi
+)
+
 st.set_page_config(
     page_title="Dashboard Monitoring ELSIMIL",
     layout="wide"
 )
+
 st.markdown("""
 <style>
 
-/* ===========================
-BACKGROUND
-=========================== */
-
 .stApp{
-    background-color:#FFF8DE;
+    background:#FFF8DE;
 }
-
-/* ===========================
-SIDEBAR
-=========================== */
 
 [data-testid="stSidebar"]{
-    background-color:#FFF2C6;
-    border-right:2px solid #AAC4F5;
+    background:#FFF2C6;
 }
-
-/* ===========================
-KPI CARD
-=========================== */
 
 [data-testid="metric-container"]{
-    background:#FFF2C6;
-    border:1px solid #AAC4F5;
-    border-radius:14px;
-    padding:18px;
-    box-shadow:0px 3px 8px rgba(0,0,0,.08);
-}
-
-[data-testid="metric-container"]:hover{
-    border:1px solid #8CA9FF;
-}
-
-/* ===========================
-JUDUL KPI
-=========================== */
-
-[data-testid="metric-container"] label{
-    font-size:15px;
-    font-weight:600;
-}
-
-/* ===========================
-BUTTON
-=========================== */
-
-.stButton button{
-
-    background:#AAC4F5;
-    color:#222;
-    border-radius:10px;
-    border:none;
-}
-
-.stButton button:hover{
-
-    background:#8CA9FF;
-    color:white;
-}
-
-/* ===========================
-SELECTBOX
-=========================== */
-
-.stSelectbox div[data-baseweb="select"]{
-
-    background:#FFF2C6;
-    border-radius:10px;
-}
-
-/* ===========================
-DATAFRAME
-=========================== */
-
-[data-testid="stDataFrame"]{
-
-    border:1px solid #AAC4F5;
-    border-radius:10px;
-}
-
-/* ===========================
-HEADERS
-=========================== */
-
-h1{
-
-    color:#2F3A56;
-    font-weight:700;
-}
-
-h2,h3{
-
-    color:#43536F;
+    border-radius:15px;
 }
 
 </style>
-
-""", unsafe_allow_html=True)
-
-st.markdown("""
-<h1 style='text-align:center;'>
-Dashboard Monitoring Entry ELSIMIL
-</h1>
-
-<p style='text-align:center;
-color:#555;
-font-size:18px;'>
-
-BKKBN Provinsi Kepulauan Bangka Belitung
-
-</p>
-
 """,unsafe_allow_html=True)
 
-st.write("")
+st.title("Dashboard Monitoring Entry ELSIMIL")
 
-# =====================
-# SIDEBAR
-# =====================
-
-st.sidebar.markdown("## Dashboard")
-
-st.sidebar.caption(
-"Monitoring Entry ELSIMIL"
+st.caption(
+    "BKKBN Provinsi Kepulauan Bangka Belitung"
 )
 
-st.sidebar.divider()
+st.divider()
 
-st.sidebar.subheader("Filter Data")
+# ==========================================
+# SIDEBAR
+# ==========================================
+
+st.sidebar.title("Dashboard")
+st.sidebar.markdown("---")
 
 jenis = st.sidebar.selectbox(
-    "Jenis Data",
-    ["CATIN","BADUTA","BUMIL"]
+
+    "Jenis Modul Pendampingan",
+
+    [
+        "CATIN",
+        "BADUTA",
+        "BUMIL"
+    ]
+)
+# ==========================================
+# LOAD DATA DARI GOOGLE SPREADSHEET
+# ==========================================
+
+df = load_data(jenis)
+# ==========================================
+# FILTER SIDEBAR
+# ==========================================
+# ==========================================
+# FILTER
+# ==========================================
+
+kabupaten_list = sorted(
+    df["KABUPATEN"]
+    .dropna()
+    .unique()
 )
 
 kabupaten = st.sidebar.selectbox(
     "Kabupaten",
+    ["Semua Kabupaten"] + kabupaten_list
+)
+
+# -----------------------------------------
+
+df_kec = df.copy()
+
+if kabupaten != "Semua Kabupaten":
+    df_kec = df_kec[
+        df_kec["KABUPATEN"] == kabupaten
+    ]
+
+kecamatan_list = sorted(
+    df_kec["KECAMATAN"]
+    .dropna()
+    .unique()
+)
+
+kecamatan = st.sidebar.selectbox(
+    "Kecamatan",
+    ["Semua Kecamatan"] + kecamatan_list
+)
+
+# -----------------------------------------
+
+df_desa = df_kec.copy()
+
+if kecamatan != "Semua Kecamatan":
+    df_desa = df_desa[
+        df_desa["KECAMATAN"] == kecamatan
+    ]
+
+desa_list = sorted(
+    df_desa["DESA/KEL"]
+    .dropna()
+    .unique()
+)
+
+desa = st.sidebar.selectbox(
+    "Desa/Kelurahan",
+    ["Semua Desa"] + desa_list
+)
+
+# -----------------------------------------
+
+bulan = st.sidebar.selectbox(
+    "Bulan Pendampingan",
     [
-        "Semua Kabupaten",
-        "BANGKA",
-        "BABAR",
-        "BATENG",
-        "BASEL",
-        "BELITUNG",
-        "BELTIM",
-        "PK.PINANG"
+        "JAN",
+        "FEB",
+        "MAR",
+        "APR",
+        "MEI",
+        "JUN"
     ]
 )
-st.sidebar.divider()
+# ===============================
+# FILTER DATA
+# ===============================
 
-st.sidebar.info(
-"""
-Gunakan filter untuk melihat
-monitoring Entry ELSIMIL berdasarkan
-jenis data dan wilayah.
-"""
+if kabupaten != "Semua Kabupaten":
+
+    df = df[
+        df["KABUPATEN"] == kabupaten
+    ]
+
+if kecamatan != "Semua Kecamatan":
+
+    df = df[
+        df["KECAMATAN"] == kecamatan
+    ]
+
+if desa != "Semua Desa":
+
+    df = df[
+        df["DESA/KEL"] == desa
+    ]
+# ==========================================
+# HITUNG KPI
+# ==========================================
+(
+    jumlah_tpk_pendampingan,
+    jumlah_tpk,
+    persentase,
+    jumlah_entry
+) = hitung_kpi(
+    df,
+    bulan
 )
-st.subheader("Ringkasan Data")
-# =====================
-# LOAD DATA
-# =====================
+# ==========================
+# KPI CARD
+# ==========================
 
-df = load_data(jenis, kabupaten)
+if desa == "Semua Desa":
 
-# =====================
-# KPI
-# =====================
+    c1,c2,c3 = st.columns(3)
 
-total_entry,total_desa,total_kecamatan,rata = hitung_kpi(df)
+    with c1:
+        st.metric(
+            "Jumlah TPK yang Melakukan Pendampingan",
+            jumlah_tpk_pendampingan
+        )
 
-col1,col2,col3,col4 = st.columns(4)
+    with c2:
+        st.metric(
+            "Jumlah Keseluruhan TPK",
+            jumlah_tpk
+        )
 
-col1.metric(
-    "Total Entry",
-    f"{int(total_entry):,}"
-)
+    with c3:
+        st.metric(
+            "Jumlah Entry Pendampingan (Januari–Juni)",
+            jumlah_entry
+        )
 
-col2.metric(
-    "Total Desa",
-    total_desa
-)
+else:
 
-col3.metric(
-    "Total Kecamatan",
-    total_kecamatan
-)
+    c1,c2,c3,c4 = st.columns(4)
 
-col4.metric(
-    "Rata-rata Entry",
-    rata
-)
-st.divider()
-st.write("")
-st.subheader("Visualisasi Data")
-# =====================
-# GRAFIK
-# =====================
+    with c1:
+        st.metric(
+            "Jumlah TPK yang Melakukan Pendampingan",
+            jumlah_tpk_pendampingan
+        )
+
+    with c2:
+        st.metric(
+            "Jumlah Keseluruhan TPK",
+            jumlah_tpk
+        )
+
+    with c3:
+        st.metric(
+            "Persentase Partisipasi TPK",
+            f"{persentase}%"
+        )
+
+    with c4:
+        st.metric(
+            "Jumlah Entry Pendampingan (Januari–Juni)",
+            jumlah_entry
+        )
 
 st.plotly_chart(
-    grafik_tren(df),
-    use_container_width=True
+    grafik_tren(df,bulan),
+    use_container_width=True,
+    key="trend"
 )
 
-st.divider()
+st.plotly_chart(
+    grafik_top_desa(df),
+    use_container_width=True,
+    key="topdesa"
+)
 
-col1, col2 = st.columns(2)
-
-with col1:
-    st.plotly_chart(
-        grafik_top_desa(df),
-        use_container_width=True
-    )
-
-with col2:
-    st.plotly_chart(
-        grafik_bottom_desa(df),
-        use_container_width=True
-    )
+st.plotly_chart(
+    grafik_bottom_desa(df),
+    use_container_width=True,
+    key="bottomdesa"
+)
 
 st.plotly_chart(
     grafik_kecamatan(df),
-    use_container_width=True
-)
-# =====================
-# DATA
-# =====================
-
-st.subheader("Data Monitoring")
-
-st.dataframe(
-    df,
     use_container_width=True,
-    hide_index=True
+    key="kecamatan"
 )
-st.divider()
-
-st.markdown(
-"""
-<div style="text-align:center;
-color:gray;
-font-size:14px;">
-
-Dashboard Monitoring Entry ELSIMIL<br>
-BKKBN Provinsi Kepulauan Bangka Belitung
-
-</div>
-""",
-unsafe_allow_html=True
-)
+#st.dataframe(df)
