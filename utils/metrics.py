@@ -2,52 +2,48 @@ import pandas as pd
 
 
 def hitung_kpi(df, bulan):
+    """
+    Menghitung KPI Dashboard
+    """
 
-    df = df.copy()
+    # ===============================
+    # Jumlah Keseluruhan TPK
+    # ===============================
+    total_tpk = pd.to_numeric(
+    df["JUMLAH TPK"],
+    errors="coerce"
+).fillna(0).sum()
 
-    # Pastikan kolom numerik
-    df[bulan] = pd.to_numeric(df[bulan], errors="coerce").fillna(0)
-    df["TOTAL"] = pd.to_numeric(df["TOTAL"], errors="coerce").fillna(0)
-    df["JUMLAH TPK"] = pd.to_numeric(df["JUMLAH TPK"], errors="coerce").fillna(0)
+    # ===============================
+    # Jumlah Entry SELALU Januari–Juni
+    # ===============================
+    jumlah_entry = 0
 
-    # ===========================
-    # 1. Jumlah TPK melakukan pendampingan
-    # ===========================
+    for b in ["JAN","FEB","MAR","APR","MEI","JUN"]:
+        jumlah_entry += pd.to_numeric(
+        df[b],
+        errors="coerce"
+    ).fillna(0).sum()
 
-    jumlah_tpk_pendampingan = int(df[bulan].sum())
+    # ===============================
+    # TPK Aktif mengikuti filter bulan
+    # ===============================
+    tpk_aktif = pd.to_numeric(
+    df[f"{bulan} TPK"],
+    errors="coerce"
+).fillna(0).sum()
 
-    # ===========================
-    # 2. Jumlah keseluruhan TPK
-    # ===========================
-
-    jumlah_tpk = (
-        df
-        .drop_duplicates(["KABUPATEN","KECAMATAN","DESA/KEL"])
-        ["JUMLAH TPK"]
-        .sum()
-    )
-
-    # ===========================
-    # 3. Persentase Partisipasi
-    # ===========================
-
-    if jumlah_tpk == 0:
-        persentase = 0
+    # ===============================
+    # Persentase Partisipasi
+    # ===============================
+    if total_tpk == 0:
+        partisipasi = 0
     else:
-        persentase = round(
-            (jumlah_tpk_pendampingan / jumlah_tpk) * 100,
-            2
-        )
-
-    # ===========================
-    # 4. Jumlah Entry Jan-Jun
-    # ===========================
-
-    jumlah_entry = int(df["TOTAL"].sum())
+        partisipasi = round((tpk_aktif / total_tpk) * 100, 2)
 
     return (
-        jumlah_tpk_pendampingan,
-        jumlah_tpk,
-        persentase,
-        jumlah_entry
+        int(tpk_aktif),
+        int(total_tpk),
+        partisipasi,
+        int(jumlah_entry)
     )
